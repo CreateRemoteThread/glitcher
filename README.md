@@ -2,8 +2,9 @@
 
 ![Glitcher Schematic](glitcher_kicad.png)
 
-## Todo
+## todo
 
-- Fix directory structure
-- Firwmare + gateware
-- Test board
+firmware x2
+dedicated target board
+voltage follower addon
+devkit addon
