@@ -10,8 +10,17 @@ module top(
     output o_max4619_b,
     output o_max4619_c,
     output o_k3,
-    output test_led     // A17
+    output test_led,     // A17
+    output rgb_led_r,
+    output rgb_led_g,
+    output rgb_led_b,
+    input i_trig,
+    output o_glitch
     );
+    
+    assign rgb_led_r = 1'b1;
+    assign rgb_led_g = 1'b1;
+    assign rgb_led_b = 1'b1;
     
     wire [7:0] rx_reg;
     wire [7:0] tx_reg;
@@ -39,27 +48,20 @@ module top(
     uart_tx m_uart_tx(w_uartclk,w_tx_dv,tx_reg,w_tx_active,o_uart_tx,w_tx_done);
     
     reg r_dummy;
+    assign o_glitch = w_glitch;
+    
+    wire w_glitch;
     
     command cmd0(.clk(w_uartclk),
+                 .sysclk(w_sysclk),
                  .rx_strobe(w_rx_dv),
                  .rx_byte(rx_reg),
                  .tx_done(w_tx_done),
                  .tx_strobe(w_tx_dv),
                  .wr_byte(tx_reg),
-                 .w_test_led(test_led)
+                 .w_test_led(test_led),
+                 .i_trig(i_trig),
+                 .o_glitch(w_glitch)
                  );
-    
-    /*
-    assign o_k3 = blink_status;
-    
-    always @(posedge w_sysclk) begin
-        if (ctr == 0'h00010000) begin
-        blink_status <= 1 - blink_status;
-            ctr <= 0'h00000000;
-        end else begin
-            ctr <= ctr + 1;
-        end
-    end
-    */
-    
+
 endmodule
