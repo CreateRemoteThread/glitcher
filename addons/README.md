@@ -1,3 +1,3 @@
 # addons and targets
 
-targets etc
+targets etc, provided as-is
