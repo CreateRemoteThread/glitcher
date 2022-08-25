@@ -16,7 +16,7 @@ The Pi Pico is the simplest method of using this. Using a micro USB cable, acces
 import glitcher
 
 g = glitcher.Glitcher()
-g.enablemux(True)      # enable max4619. crowbar always "on"
+g.muxenable(True)      # enable max4619. crowbar always "on"
 g.setmux(0xF)          # all 3 channels
 g.rnr(delay=5,width=5) # write delay/width, glitch 
 
