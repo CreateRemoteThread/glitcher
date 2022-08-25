@@ -17,6 +17,14 @@ class Glitcher:
         time.sleep(0.1)
         self.u1.read()
         print("OK")
+        
+    def setrepeat(self,repeatnum=0,repeatdelay=0):
+        self.u1.write(bytes([0x03,0x30,repeatdelay & 0xFF]))  # delay
+        self.u1.write(bytes([0x03,0x31,(repeatdelay >> 8) & 0xFF]))
+        self.u1.write(bytes([0x03,0x32,repeatnum & 0xFF]))
+        self.u1.write(bytes([0x03,0x33,(repeatnum >> 8) & 0xFF]))
+        time.sleep(0.1)
+        self.u1.read()
 
     # 0x1 = glitcher
     # 0xF = x mux
