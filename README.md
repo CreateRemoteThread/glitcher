@@ -23,6 +23,6 @@ g.muxout(glitcher.SELECT_NONE)            # switch x_out to x0
 g.rnr(delay=5,width=5)           # write delay/width, glitch output according to setmask
 ```
 
-The Pi Pico uses only a serial port to talk to the FPGA at 9600bps, so you can swap it for some other uC / make a shield / whatever. Just replace self.u1 with a pyserial output if you want to use a control PC (enablemux is the only thing requiring the pi pico, just hardwire it idk).
+The Pi Pico uses only a serial port to talk to the FPGA at 115200bps, so you can swap it for some other uC / make a shield / whatever. Just replace self.u1 with a pyserial output if you want to use a control PC (enablemux is the only thing requiring the pi pico, just hardwire it idk).
 
 Probably don't use g.muxout(0xF) - but do whatever you want.
