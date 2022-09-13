@@ -9,7 +9,6 @@ module top(
     output o_max4619_a,
     output o_max4619_b,
     output o_max4619_c,
-    output o_k3,
     output test_led,     // A17
     output rgb_led_r,
     output rgb_led_g,
@@ -18,9 +17,9 @@ module top(
     output o_glitch
     );
     
-    assign rgb_led_r = 1'b1;
-    assign rgb_led_g = 1'b1;
-    assign rgb_led_b = 1'b1;
+    // output_mux can glitch ALL the max4619 ports.
+    wire [3:0] w_output_mux;
+    wire [3:0] w_force_output;
     
     wire [7:0] rx_reg;
     wire [7:0] tx_reg;
@@ -48,9 +47,16 @@ module top(
     uart_tx m_uart_tx(w_uartclk,w_tx_dv,tx_reg,w_tx_active,o_uart_tx,w_tx_done);
     
     reg r_dummy;
-    assign o_glitch = w_glitch;
-    
+    assign o_glitch =    (w_glitch & w_output_mux[0]) | w_force_output[0];
+    assign o_max4619_a = (w_glitch & w_output_mux[1]) | w_force_output[1];
+    assign o_max4619_b = (w_glitch & w_output_mux[2]) | w_force_output[2];
+    assign o_max4619_c = (w_glitch & w_output_mux[3]) | w_force_output[3];
+   
     wire w_glitch;
+    
+    wire w_rgbled_r;
+    wire w_rgbled_g;
+    wire w_rgbled_b;
     
     command cmd0(.clk(w_uartclk),
                  .sysclk(w_sysclk),
@@ -59,9 +65,31 @@ module top(
                  .tx_done(w_tx_done),
                  .tx_strobe(w_tx_dv),
                  .wr_byte(tx_reg),
-                 .w_test_led(test_led),
                  .i_trig(i_trig),
-                 .o_glitch(w_glitch)
+                 .o_glitch(w_glitch),
+                 .o_force_output(w_force_output),
+                 .o_output_mux(w_output_mux),
+                 .o_arm_led(w_rgbled_r),
+                 .o_waiting_led(w_rgbled_g),
+                 .o_firing_led(w_rgbled_b),
+                 .o_test_led(test_led)
                  );
-
+                 
+    pwm pwm0(.clk(w_uartclk),
+             .enable(w_rgbled_r),
+             .duty(4'b1110),
+             .pwm_out(rgb_led_r)
+             );
+             
+    pwm pwm1(.clk(w_uartclk),
+             .enable(w_rgbled_g),
+             .duty(4'b1110),
+             .pwm_out(rgb_led_g)
+             );
+             
+    pwm pwm2(.clk(w_uartclk),
+             .enable(w_rgbled_b),
+             .duty(4'b1110),
+             .pwm_out(rgb_led_b)
+             );
 endmodule

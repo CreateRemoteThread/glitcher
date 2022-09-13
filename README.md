@@ -16,10 +16,13 @@ The Pi Pico is the simplest method of using this. Using a micro USB cable, acces
 import glitcher
 
 g = glitcher.Glitcher()
-g.muxenable(True)      # enable max4619. crowbar always "on"
-g.setmux(0xF)          # all 3 channels
-g.rnr(delay=5,width=5) # write delay/width, glitch 
-
+g.enablemux(True)                # enable max4619. crowbar always "on"
+g.setmask(glitcher.SELECT_MOSFET)         # select mosfet for glitching
+g.muxout(glitcher.SELECT_MUXA)            # switch x_out to x1
+g.muxout(glitcher.SELECT_NONE)            # switch x_out to x0
+g.rnr(delay=5,width=5)           # write delay/width, glitch output according to setmask
 ```
 
-The Pi Pico uses only a serial port to talk to the FPGA at 9600bps, so you can swap it for some other uC / make a shield / whatever.
+The Pi Pico uses only a serial port to talk to the FPGA at 9600bps, so you can swap it for some other uC / make a shield / whatever. Just replace self.u1 with a pyserial output if you want to use a control PC (enablemux is the only thing requiring the pi pico, just hardwire it idk).
+
+Probably don't use g.muxout(0xF) - but do whatever you want.

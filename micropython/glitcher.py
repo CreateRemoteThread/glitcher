@@ -2,6 +2,12 @@ from machine import UART, Pin
 import time
 import random
 
+SELECT_NONE = 0x0
+SELECT_MOSFET = 0x01
+SELECT_MUXA = 0x02
+SELECT_MUXB = 0x04
+SELECT_MUXC = 0x08
+
 def splitDword(inval):
     d0 = inval & 0xFF
     d1 = (inval >> 8) & 0xFF
@@ -17,19 +23,26 @@ class Glitcher:
         time.sleep(0.1)
         self.u1.read()
         print("OK")
-        
-    def setrepeat(self,repeatnum=0,repeatdelay=0):
-        self.u1.write(bytes([0x03,0x30,repeatdelay & 0xFF]))  # delay
-        self.u1.write(bytes([0x03,0x31,(repeatdelay >> 8) & 0xFF]))
-        self.u1.write(bytes([0x03,0x32,repeatnum & 0xFF]))
-        self.u1.write(bytes([0x03,0x33,(repeatnum >> 8) & 0xFF]))
+
+    def setrepeat(self,num=0,delay=0):
+        self.u1.write(bytes([0x03,0x30,delay & 0xFF]))  # delay
+        self.u1.write(bytes([0x03,0x31,(delay >> 8) & 0xFF]))
+        self.u1.write(bytes([0x03,0x32,num & 0xFF]))
+        self.u1.write(bytes([0x03,0x33,(num >> 8) & 0xFF]))
         time.sleep(0.1)
         self.u1.read()
 
     # 0x1 = glitcher
     # 0xF = x mux
-    def setmux(self,muxnum=1):
+    def setmask(self,muxnum=1):
         self.u1.write(bytes([0x03,0x50,muxnum]))
+        time.sleep(0.1)
+        print(self.u1.read())
+        self.disarm()
+        
+    # manual mux out
+    def muxout(self,muxnum=0):
+        self.u1.write(bytes([0x03,0x60,muxnum]))
         time.sleep(0.1)
         print(self.u1.read())
         self.disarm()
@@ -50,7 +63,7 @@ class Glitcher:
             self.rnr(delay=rdelay,width=rwidth)
             time.sleep(0.25)
             r = self.check(verbose=False) 
-            while r != 0 and r != 4:
+            while ((r != 0) and (r != 4)):
                 time.sleep(0.1)
                 r = self.check(verbose=False)  
     
@@ -101,7 +114,7 @@ class Glitcher:
         time.sleep(0.1)
         print(self.u1.read(1))
 
-    def muxenable(self,enable=True):
+    def enablemux(self,enable=True):
         if enable is True:
             self.en.value(0)
         else:

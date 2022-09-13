@@ -9,16 +9,21 @@ module command(
     output o_test_led,
     input i_trig,
     output o_glitch,
-    output [7:0] o_output_mux,
+    output [3:0] o_output_mux,
+    output [3:0] o_force_output,
     output o_arm_led,
     output o_waiting_led,
     output o_firing_led
 );
 
+    // use this to force an hard-force an output (i.e. power on-off).
+    reg [3:0] r_force_output = 0;
+    assign o_force_output = r_force_output;
+    
     // wire w_test_led; // suppress errors, idk fix this later.
-    reg [7:0] r_output_mux = 0;
+    reg [3:0] r_output_mux = 0;
 
-    assign o_output_mux[7:0] = r_output_mux[7:0];
+    assign o_output_mux[3:0] = r_output_mux[3:0];
 
     reg [31:0] r_CLK_EDGE_TARGET = 0;
     reg [31:0] r_ARMSTATE;
@@ -52,6 +57,7 @@ module command(
 `define PARAM_REPEAT 8'h3
 
 `define PARAM_OUTPUTMUX 8'h5
+`define PARAM_FORCEOUTPUT 8'h6
 
 `define RESP_ACK 8'hAA
 `define RESP_NACK 8'hFF
@@ -127,7 +133,11 @@ module command(
                     r_usart_tx_queue_byte[7:0] <= `RESP_ACK;
                     r_usart_tx_queue <= 1 - r_usart_tx_queue;
                 end else if (r_parambuf[7:4] == `PARAM_OUTPUTMUX) begin
-                    r_output_mux <= rx_byte;
+                    r_output_mux <= rx_byte[3:0];
+                    r_usart_tx_queue_byte[7:0] <= `RESP_ACK;
+                    r_usart_tx_queue <= 1 - r_usart_tx_queue;
+                end else if (r_parambuf[7:4] == `PARAM_FORCEOUTPUT) begin
+                    r_force_output <= rx_byte[3:0];
                     r_usart_tx_queue_byte[7:0] <= `RESP_ACK;
                     r_usart_tx_queue <= 1 - r_usart_tx_queue;
                 end else begin
@@ -178,7 +188,13 @@ module command(
 `define GL_COOLDOWN 4'h4
 
     wire w_manual_arm = (r_ARMSTATE[0] == 1'b1);
+    // reg last_trig = 1'b0;
+    // wire w_inter_trig = (i_trig && (last_trig == 0))
     wire w_trig = (i_trig || w_manual_arm);
+    
+    reg r_last_trig = 1'b0;
+    
+    wire w_real_trig = (i_trig == 1 && r_last_trig == 0);
 
     assign o_test_led = w_manual_arm;
     assign o_glitch = (r_gl_state == `GL_FIRING);
@@ -188,11 +204,13 @@ module command(
     assign o_firing_led = (r_gl_state == `GL_FIRING);
     
     always @(posedge sysclk) begin
+        r_last_trig <= i_trig;
         if (r_disarm == 1) begin
             r_gl_state <= `GL_IDLE;
             r_gl_ctr <= 0;
             r_gl_pulse <= 0;
         end else if (r_disarm == 1 && r_gl_state == `GL_COOLDOWN) begin
+            // fix for avr trigger high lock bug
             r_gl_state <= `GL_IDLE;
             r_gl_ctr <= 0;
             r_gl_pulse <= 0;
@@ -201,8 +219,13 @@ module command(
             r_gl_ctr <= 0;
             r_gl_pulse <= 0;
         end else if (r_gl_state == `GL_ARMED) begin
-            if (w_trig == 1) begin
+            if (w_manual_arm == 1) begin
+                // force arming state, manually fire
                 r_gl_state <= `GL_WAITING;
+            end else begin
+                if (w_real_trig == 1) begin
+                    r_gl_state <= `GL_WAITING;
+                end
             end
         end else if (r_gl_state == `GL_WAITING) begin
             if (r_gl_ctr[31:0] == r_CLK_EDGE_TARGET[31:0]) begin
@@ -232,4 +255,3 @@ module command(
     end
 
 endmodule
-
