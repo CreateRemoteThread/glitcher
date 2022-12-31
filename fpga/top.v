@@ -14,12 +14,35 @@ module top(
     output rgb_led_g,
     output rgb_led_b,
     input i_trig,
-    output o_glitch
+    output o_glitch,
+    output o_m1,
+    output o_n3,
+    output o_p3,
+    output o_auxout,
+    output o_clkout
     );
     
+    // sma's up top. auxout closest to FPGA.
+    // assign o_auxout = 1;
+    assign o_clkout = 1;
+    
+    // LEDs. 1 is "off".
+    assign o_m1 = 1;
+    assign o_n3 = 1;
+    assign o_p3 = 1;
+    
+    /*
+    signal_test sig1(
+        .o_sig1(o_m1),
+        .o_sig2(o_n3),
+        .o_sig3(o_p3),
+        .clk(w_uartclk)
+    );
+    */
+    
     // output_mux can glitch ALL the max4619 ports.
-    wire [3:0] w_output_mux;
-    wire [3:0] w_force_output;
+    wire [7:0] w_output_mux;
+    wire [7:0] w_force_output;
     
     wire [7:0] rx_reg;
     wire [7:0] tx_reg;
@@ -35,6 +58,9 @@ module top(
     wire w_uartclk;
     wire w_clk_locked;
     wire w_reset;
+    
+    // this is active high, i checked the xilinx ip picture thingy
+    assign w_reset = 0;
 
     design_1_wrapper test_clkwiz(.clk_out_100mhz(w_sysclk),
                             .clk_out_10mhz(w_uartclk),
@@ -47,13 +73,15 @@ module top(
     uart_tx m_uart_tx(w_uartclk,w_tx_dv,tx_reg,w_tx_active,o_uart_tx,w_tx_done);
     
     reg r_dummy;
+    wire w_glitch;
+    
     assign o_glitch =    (w_glitch & w_output_mux[0]) | w_force_output[0];
     assign o_max4619_a = (w_glitch & w_output_mux[1]) | w_force_output[1];
     assign o_max4619_b = (w_glitch & w_output_mux[2]) | w_force_output[2];
     assign o_max4619_c = (w_glitch & w_output_mux[3]) | w_force_output[3];
+    assign o_auxout =    (w_glitch & w_output_mux[4]) | w_force_output[4];
    
-    wire w_glitch;
-    
+
     wire w_rgbled_r;
     wire w_rgbled_g;
     wire w_rgbled_b;

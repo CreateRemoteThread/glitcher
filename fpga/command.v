@@ -9,27 +9,29 @@ module command(
     output o_test_led,
     input i_trig,
     output o_glitch,
-    output [3:0] o_output_mux,
-    output [3:0] o_force_output,
+    output [7:0] o_output_mux,
+    output [7:0] o_force_output,
     output o_arm_led,
     output o_waiting_led,
     output o_firing_led
 );
 
     // use this to force an hard-force an output (i.e. power on-off).
-    reg [3:0] r_force_output = 0;
+    reg [7:0] r_force_output = 0;
     assign o_force_output = r_force_output;
     
     // wire w_test_led; // suppress errors, idk fix this later.
-    reg [3:0] r_output_mux = 0;
+    reg [7:0] r_output_mux = 0;
 
-    assign o_output_mux[3:0] = r_output_mux[3:0];
+    assign o_output_mux = r_output_mux;
 
     reg [31:0] r_CLK_EDGE_TARGET = 0;
     reg [31:0] r_ARMSTATE;
     
     reg [31:0] r_PULSEWIDTH = 0;
     reg [31:0] r_REPEAT = 0; // 31:16 = repeat count, 15:0 = repeat delay.
+    
+    reg [31:0] r_CLKTARGET;
 
     reg [3:0] r_state = 0;
     reg [7:0] r_cmdbuf = 0;
@@ -49,7 +51,6 @@ module command(
 `define CMD_ARM 8'h4
 `define CMD_DISARM 8'h5
 `define CMD_CHECKSTATE 8'h6
-
 
 `define PARAM_CLKEDGES 8'h1
 `define PARAM_PULSEWIDTH 8'h4
@@ -133,11 +134,11 @@ module command(
                     r_usart_tx_queue_byte[7:0] <= `RESP_ACK;
                     r_usart_tx_queue <= 1 - r_usart_tx_queue;
                 end else if (r_parambuf[7:4] == `PARAM_OUTPUTMUX) begin
-                    r_output_mux <= rx_byte[3:0];
+                    r_output_mux <= rx_byte[7:0];
                     r_usart_tx_queue_byte[7:0] <= `RESP_ACK;
                     r_usart_tx_queue <= 1 - r_usart_tx_queue;
                 end else if (r_parambuf[7:4] == `PARAM_FORCEOUTPUT) begin
-                    r_force_output <= rx_byte[3:0];
+                    r_force_output <= rx_byte[7:0];
                     r_usart_tx_queue_byte[7:0] <= `RESP_ACK;
                     r_usart_tx_queue <= 1 - r_usart_tx_queue;
                 end else begin
