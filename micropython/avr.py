@@ -36,6 +36,14 @@ class AVRProgrammer:
         self.p1.write_readinto(b"\xAC\xE0\x00" + bytes([lckbit]),dx)
         print(":".join([hex(x) for x in dx]))
 
+    def writeMemory(self,page_msb=0x00,page_lsb=0x00):
+        dx = bytearray(4)
+        mempage = bytearray(128)
+        for i in range(0,128):
+            mempage[i] = i
+        self.p1.write_readinto(bytes([0x4c,page_msb,page_lsb,0]))
+        self.p1.write(mempage)
+
     def readMemory(self,addr_b1,addr_b2):
         dx = bytearray(4)
         self.p1.write_readinto(bytes([0x20,addr_b1,addr_b2,0x00]),dx)
