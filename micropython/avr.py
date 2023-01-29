@@ -14,14 +14,21 @@ class AVRTarget:
 
 class AVRProgrammer:
     def __init__(self,pin_sck=6,pin_mosi=7,pin_miso=4,pin_cs=14,pin_trig=15):
-        self.p1 = SPI(0,baudrate=1000000,polarity=1,phase=1,bits=8,firstbit=SPI.MSB,sck=Pin(pin_sck),mosi=Pin(pin_mosi),miso=Pin(pin_miso))
-        self.cs = Pin(pin_cs,Pin.OUT)
-        self.cs.value(1)
-        self.trig = Pin(pin_trig,Pin.OUT)
-        self.trig.value(0)
-        print("Initialized AVR programmer (sck=%d,mosi=%d,miso=%d,cs=%d)" % (pin_sck,pin_mosi,pin_miso,pin_cs))
+        self.pin_sck = pin_sck
+        self.pin_mosi = pin_mosi
+        self.pin_miso = pin_miso
+        self.pin_cs = pin_cs
+        self.pin_trig = pin_trig
+        print("Created AVRProgrammer object. Use enterProgramming to begin")
+        pass
 
     def enterProgramming(self):
+        self.p1 = SPI(0,baudrate=1000000,polarity=1,phase=1,bits=8,firstbit=SPI.MSB,sck=Pin(self.pin_sck),mosi=Pin(self.pin_mosi),miso=Pin(self.pin_miso))
+        self.cs = Pin(self.pin_cs,Pin.OUT)
+        self.cs.value(1)
+        self.trig = Pin(self.pin_trig,Pin.OUT)
+        self.trig.value(0)
+        print("Initialized AVR programmer (sck=%d,mosi=%d,miso=%d,cs=%d)" % (self.pin_sck,self.pin_mosi,self.pin_miso,self.pin_cs))
         dx = bytearray(4)
         self.cs.value(0)
         self.p1.write_readinto(b"\xAC\x53\x00\x00",dx)
@@ -60,4 +67,3 @@ class AVRProgrammer:
 
     def exitProgramming(self):
         self.cs.value(1)
-
