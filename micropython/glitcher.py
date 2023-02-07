@@ -5,8 +5,8 @@ import random
 SELECT_NONE = 0x0
 SELECT_MOSFET = 0x01
 SELECT_MUXA = 0x02
-SELECT_MUXB = 0x04
-SELECT_MUXC = 0x08
+SELECT_MUXB = 0x08
+SELECT_MUXC = 0x04
 
 def splitDword(inval):
     d0 = inval & 0xFF
