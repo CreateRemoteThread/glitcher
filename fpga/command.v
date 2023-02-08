@@ -59,9 +59,9 @@ module command(
 `define PARAM_REPEAT 8'h3
 `define PARAM_PULSEWIDTH 8'h4
 `define PARAM_EDGETGT 8'h5
-`define PARAM_OUTPUTMUX 8'h5
-`define PARAM_FORCEOUTPUT 8'h6
-`define PARAM_CFGREG1 8'h7
+`define PARAM_OUTPUTMUX 8'h6
+`define PARAM_FORCEOUTPUT 8'h7
+`define PARAM_CFGREG1 8'h8
 
 `define RESP_ACK 8'hAA
 `define RESP_NACK 8'hFF

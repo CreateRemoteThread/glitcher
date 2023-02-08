@@ -25,6 +25,16 @@ class Glitcher:
         self.u1.read()
         print("OK")
 
+    def initSane(self):
+        self.enablemux(True)
+        self.muxout(0x08)   # MUXB
+        self.setmask(0x01)  # MOSFET
+        self.cfgreg1(0x00)
+        print("Sane defaults:")
+        print("  - Mux B output on via muxout")
+        print("  - Glitch output to MOSFET")
+        print("  - Non-inverting trigger")
+
     def setrepeat(self,num=0,delay=0):
         self.u1.write(bytes([0x03,0x30,delay & 0xFF]))  # delay
         self.u1.write(bytes([0x03,0x31,(delay >> 8) & 0xFF]))
@@ -36,20 +46,20 @@ class Glitcher:
     # 0x1 = glitcher
     # 0xF = x mux
     def setmask(self,muxnum=1):
-        self.u1.write(bytes([0x03,0x50,muxnum]))
+        self.u1.write(bytes([0x03,0x60,muxnum]))
         time.sleep(0.1)
         print(self.u1.read())
         self.disarm()
 
     def cfgreg1(self,cfgval=0):
-        self.u1.write(bytes([0x03,0x70,cfgval]))
+        self.u1.write(bytes([0x03,0x80,cfgval]))
         time.sleep(0.1)
         print(self.u1.read())
         self.disarm()
         
     # manual mux out
     def muxout(self,muxnum=0):
-        self.u1.write(bytes([0x03,0x60,muxnum]))
+        self.u1.write(bytes([0x03,0x70,muxnum]))
         time.sleep(0.1)
         print(self.u1.read())
         self.disarm()
