@@ -7,7 +7,7 @@ module command(
     output tx_strobe,
     output [7:0] wr_byte,
     output o_test_led,
-    input i_trig,
+    input i_trig_orig,
     output o_glitch,
     output [7:0] o_output_mux,
     output [7:0] o_force_output,
@@ -36,6 +36,8 @@ module command(
     reg [3:0] r_state = 0;
     reg [7:0] r_cmdbuf = 0;
     reg [7:0] r_parambuf = 0;
+    
+    reg [7:0] r_cfgreg1 = 0;
     reg r_disarm = 1;
 
     reg r_usart_tx_queue;
@@ -53,18 +55,22 @@ module command(
 `define CMD_CHECKSTATE 8'h6
 
 `define PARAM_CLKEDGES 8'h1
-`define PARAM_PULSEWIDTH 8'h4
 `define PARAM_ARMSTATE 8'h2
 `define PARAM_REPEAT 8'h3
-
+`define PARAM_PULSEWIDTH 8'h4
+`define PARAM_EDGETGT 8'h5
 `define PARAM_OUTPUTMUX 8'h5
 `define PARAM_FORCEOUTPUT 8'h6
+`define PARAM_CFGREG1 8'h7
 
 `define RESP_ACK 8'hAA
 `define RESP_NACK 8'hFF
 
     reg r_write_strobe;
     reg r_test_led = 0;
+    
+    reg [31:0] r_edgectr = 0;
+    reg [31:0] r_edgetgt = 0;
 
     always @(posedge rx_strobe) begin
         if (r_state == `STATE_IDLE) begin
@@ -119,6 +125,14 @@ module command(
             end else if (r_cmdbuf == `CMD_WRITE) begin
                 if (r_parambuf[7:4] == `PARAM_CLKEDGES) begin
                     r_CLK_EDGE_TARGET[8 * r_parambuf[3:0] +:8] <= rx_byte;
+                    r_usart_tx_queue_byte[7:0] <= `RESP_ACK;
+                    r_usart_tx_queue <= 1 - r_usart_tx_queue;
+                end else if (r_parambuf[7:4] == `PARAM_EDGETGT) begin
+                    r_edgetgt[8 * r_parambuf[3:0] +:8] <= rx_byte;
+                    r_usart_tx_queue_byte[7:0] <= `RESP_ACK;
+                    r_usart_tx_queue <= 1 - r_usart_tx_queue;
+                end else if (r_parambuf[7:4] == `PARAM_CFGREG1) begin
+                    r_cfgreg1[7:0] <= rx_byte;
                     r_usart_tx_queue_byte[7:0] <= `RESP_ACK;
                     r_usart_tx_queue <= 1 - r_usart_tx_queue;
                 end else if (r_parambuf[7:4] == `PARAM_ARMSTATE) begin
@@ -190,19 +204,20 @@ module command(
 
     wire w_manual_arm = (r_ARMSTATE[0] == 1'b1);
     // reg last_trig = 1'b0;
-    // wire w_inter_trig = (i_trig && (last_trig == 0))
-    wire w_trig = (i_trig || w_manual_arm);
+    // wire w_trig = (i_trig || w_manual_arm);
     
     reg r_last_trig = 1'b0;
     
-    wire w_real_trig = (i_trig == 1 && r_last_trig == 0);
+    // falling 
+    wire i_trig = i_trig_orig ^ r_cfgreg1[0];
+    wire w_real_trig = ((i_trig == 1) && (r_last_trig == 0));
 
     assign o_test_led = w_manual_arm;
     assign o_glitch = (r_gl_state == `GL_FIRING);
     
     assign o_arm_led = (r_gl_state == `GL_ARMED);
     assign o_waiting_led = (r_gl_state == `GL_WAITING);
-    assign o_firing_led = (r_gl_state == `GL_FIRING);
+    assign o_firing_led = (r_gl_state == `GL_FIRING);// = r_cfgreg1[0]; // 
     
     always @(posedge sysclk) begin
         r_last_trig <= i_trig;
@@ -210,22 +225,32 @@ module command(
             r_gl_state <= `GL_IDLE;
             r_gl_ctr <= 0;
             r_gl_pulse <= 0;
+            r_gl_rptcount <= 0;
+            r_edgectr <= 0;
         end else if (r_disarm == 1 && r_gl_state == `GL_COOLDOWN) begin
             // fix for avr trigger high lock bug
+            // 31-dec-22 : seems redundant, investigate why i put this here
             r_gl_state <= `GL_IDLE;
             r_gl_ctr <= 0;
             r_gl_pulse <= 0;
+            r_gl_rptcount <= 0;
+            r_edgectr <= 0;
         end else if (r_disarm == 0 && r_gl_state == `GL_IDLE) begin
             r_gl_state <= `GL_ARMED;
             r_gl_ctr <= 0;
             r_gl_pulse <= 0;
+            r_gl_rptcount <= 0;
         end else if (r_gl_state == `GL_ARMED) begin
             if (w_manual_arm == 1) begin
                 // force arming state, manually fire
                 r_gl_state <= `GL_WAITING;
             end else begin
                 if (w_real_trig == 1) begin
+                    if (r_edgectr == r_edgetgt) begin
                     r_gl_state <= `GL_WAITING;
+                    end else begin
+                        r_edgectr <= r_edgectr + 1;
+                    end
                 end
             end
         end else if (r_gl_state == `GL_WAITING) begin
@@ -242,6 +267,7 @@ module command(
                     r_gl_ctr <= 0;
                     r_gl_pulse <= 0;
                     r_gl_rptcount <= 0;
+                    r_edgectr <= 0;
                 end else begin
                     // refire.
                     r_gl_state <= `GL_WAITING;

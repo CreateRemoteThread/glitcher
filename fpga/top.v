@@ -93,7 +93,7 @@ module top(
                  .tx_done(w_tx_done),
                  .tx_strobe(w_tx_dv),
                  .wr_byte(tx_reg),
-                 .i_trig(i_trig),
+                 .i_trig_orig(i_trig),
                  .o_glitch(w_glitch),
                  .o_force_output(w_force_output),
                  .o_output_mux(w_output_mux),

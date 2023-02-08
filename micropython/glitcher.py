@@ -7,6 +7,7 @@ SELECT_MOSFET = 0x01
 SELECT_MUXA = 0x02
 SELECT_MUXB = 0x08
 SELECT_MUXC = 0x04
+SELECT_AUX = 0x10
 
 def splitDword(inval):
     d0 = inval & 0xFF
@@ -36,6 +37,12 @@ class Glitcher:
     # 0xF = x mux
     def setmask(self,muxnum=1):
         self.u1.write(bytes([0x03,0x50,muxnum]))
+        time.sleep(0.1)
+        print(self.u1.read())
+        self.disarm()
+
+    def cfgreg1(self,cfgval=0):
+        self.u1.write(bytes([0x03,0x70,cfgval]))
         time.sleep(0.1)
         print(self.u1.read())
         self.disarm()
@@ -121,4 +128,3 @@ class Glitcher:
             self.en.value(1)
 
 print("Create a glitcher.Glitcher() to start")
-
