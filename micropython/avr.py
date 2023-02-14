@@ -22,8 +22,8 @@ class AVRProgrammer:
         print("Created AVRProgrammer object. Use enterProgramming to begin")
         pass
 
-    def enterProgramming(self):
-        self.p1 = SPI(0,baudrate=1000000,polarity=1,phase=1,bits=8,firstbit=SPI.MSB,sck=Pin(self.pin_sck),mosi=Pin(self.pin_mosi),miso=Pin(self.pin_miso))
+    def enterProgramming(self,baudrate=1000000):
+        self.p1 = SPI(0,baudrate=baudrate,polarity=1,phase=1,bits=8,firstbit=SPI.MSB,sck=Pin(self.pin_sck),mosi=Pin(self.pin_mosi),miso=Pin(self.pin_miso))
         self.cs = Pin(self.pin_cs,Pin.OUT)
         self.cs.value(1)
         self.trig = Pin(self.pin_trig,Pin.OUT)
