@@ -45,23 +45,32 @@ class Glitcher:
 
     # 0x1 = glitcher
     # 0xF = x mux
-    def setmask(self,muxnum=1):
+    def setmask(self,muxnum=1,quiet=True):
         self.u1.write(bytes([0x03,0x60,muxnum]))
         time.sleep(0.1)
-        print(self.u1.read())
+        if quiet is False:
+            print(self.u1.read())
+        else:
+            self.u1.read()
         self.disarm()
 
-    def cfgreg1(self,cfgval=0):
+    def cfgreg1(self,cfgval=0,quiet=True):
         self.u1.write(bytes([0x03,0x80,cfgval]))
         time.sleep(0.1)
-        print(self.u1.read())
+        if quiet is False:
+            print(self.u1.read())
+        else:
+            self.u1.read()
         self.disarm()
         
     # manual mux out
-    def muxout(self,muxnum=0):
+    def muxout(self,muxnum=0,quiet=True):
         self.u1.write(bytes([0x03,0x70,muxnum]))
         time.sleep(0.1)
-        print(self.u1.read())
+        if quiet is False:
+            print(self.u1.read())
+        else:
+            self.u1.read()
         self.disarm()
         
     def glitchLoop(self,delay=None,width=None,count=50):
@@ -84,27 +93,29 @@ class Glitcher:
                 time.sleep(0.1)
                 r = self.check(verbose=False)  
     
-    def check(self,verbose=False):
+    def check(self,quiet=True):
         self.u1.write(b"\x06")
         time.sleep(0.1)
         d = self.u1.read(1)
-        if verbose is True:
+        if quiet is False:
             print(d)
         return int(d[0])
     
-    def arm(self):
+    def arm(self,quiet=True):
         self.u1.write(b"\x04")
         time.sleep(0.1)
         d = self.u1.read(1)
-        print(d)
+        if quiet is False:
+            print(d)
     
-    def disarm(self):
+    def disarm(self,quiet=True):
         self.u1.write(b"\x05")
         time.sleep(0.1)
         d = self.u1.read(1)
-        print(d)
+        if quiet is False:
+            print(d)
 
-    def rnr(self,delay=None,width=None,verbose=False):
+    def rnr(self,delay=None,width=None,quiet=True):
         self.u1.write(b"\x05")
         if delay is None:
             delay = random.randint(5,10)
@@ -123,7 +134,7 @@ class Glitcher:
         self.u1.write(b"\x04")
         time.sleep(0.1)
         d = self.u1.read()
-        if verbose:
+        if quiet is False:
             print(d)
         
     def ping(self):

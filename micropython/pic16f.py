@@ -15,31 +15,26 @@ def gpiobang():
     ispdat.value(0)
     ispclk.value(0)
 
-@asm_pio(out_init=[PIO.OUT_HIGH],sideset_init=[PIO.OUT_HIGH],out_shiftdir=PIO.SHIFT_RIGHT)
+# set x at the start of the SM.
+@asm_pio(out_init=[PIO.INPUT],sideset_init=[PIO.OUT_HIGH],out_shiftdir=PIO.SHIFT_RIGHT)
 def clkbang():
+  set(pindirs,1)
   pull()
-  set(x,7)
   label("bitloop")
   nop().side(1)
   out(pins,1)
   nop().side(0)
   nop()
   jmp(x_dec,"bitloop")
-  set(x,7)
-  # sideset(pindirs,0)
-  label("readloop")
-  nop().side(1)
-  # in(pins,1)
-  nop().side(0)
-  nop()
-  jmp(x_dec,"readloop") 
-  nop()
 
 def test():
   sm = StateMachine(0,clkbang,freq=1000000,out_base=Pin(14),sideset_base=Pin(15))
+  sm.exec("set x, 7")  # BITS_OUT
+  # sm.exec("set y, 23") # BITS_IN
   sm.active(1)
   sm.put(0xAA)
   time.sleep(5.0)
+  # print(sm.get())
   sm.active(0)
 
 print("use pic16f.test() to try it")
