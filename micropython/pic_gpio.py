@@ -66,7 +66,7 @@ class PICProgrammer:
                 tsethold()
                 self.PGC.value(0)
                 tsethold()
-        # self.xbit()
+        self.xbit()
         # print(out_stream)
 
     def command(self,x):
@@ -94,7 +94,7 @@ class PICProgrammer:
             tsethold()
             self.PGC.value(0)
             tsethold()
-        self.xbit()
+        # self.xbit()
 
     def read_data(self):
         x = 0
