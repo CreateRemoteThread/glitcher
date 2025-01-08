@@ -36,15 +36,10 @@ set_property IOSTANDARD LVCMOS33 [get_ports o_max4619_c]
 set_property IOSTANDARD LVCMOS33 [get_ports o_uart_tx]
 set_property IOSTANDARD LVCMOS33 [get_ports test_led]
 
-set_property PACKAGE_PIN A17 [get_ports test_led]
-
-set_property SLEW FAST [get_ports o_glitch]
-set_property DRIVE 12 [get_ports o_glitch]
-
-
+set_property PACKAGE_PIN M1 [get_ports o_m1]
 set_property PACKAGE_PIN N3 [get_ports o_n3]
 set_property PACKAGE_PIN P3 [get_ports o_p3]
-set_property PACKAGE_PIN M1 [get_ports o_m1]
+
 set_property IOSTANDARD LVCMOS33 [get_ports o_m1]
 set_property IOSTANDARD LVCMOS33 [get_ports o_n3]
 set_property IOSTANDARD LVCMOS33 [get_ports o_p3]
@@ -54,3 +49,15 @@ set_property PACKAGE_PIN N2 [get_ports o_clkout]
 set_property IOSTANDARD LVCMOS33 [get_ports o_auxout]
 set_property IOSTANDARD LVCMOS33 [get_ports o_clkout]
 
+set_property PACKAGE_PIN A17 [get_ports test_led]
+
+set_property SLEW FAST [get_ports o_glitch]
+set_property DRIVE 12 [get_ports o_glitch]
+
+
+set_property PACKAGE_PIN L2 [get_ports i_wforce]
+set_property IOSTANDARD LVCMOS33 [get_ports i_wforce]
+
+set_property IOSTANDARD LVCMOS18 [get_ports i_sysclk]
+set_property OFFCHIP_TERM NONE [get_ports test_led]
+set_property PACKAGE_PIN L17 [get_ports i_sysclk]
