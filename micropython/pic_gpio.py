@@ -19,6 +19,9 @@ INVERTER_OUT = 12
 def simpleInverter():
     wrap_target()
     pull()
+    mov(x,osr)
+    pull()
+    mov(y,osr)
     wait(0,pin,0)
     label("loop_wait")
     jmp(x_dec,"loop_wait")
@@ -28,12 +31,14 @@ def simpleInverter():
     set(pins,0)
     wrap()
 
+DELAY_X = 30
+PULSE_Y = 15
+
 pin_in = Pin(INVERTER_IN, Pin.IN)
 pin_set = Pin(INVERTER_OUT)
-sm = StateMachine(0,simpleInverter,freq=40000000,in_base=pin_in, set_base=pin_set,pull_thresh=8)
-sm.exec("set(x,15)")
-sm.exec("set(y,15)")
-sm.active(1)
+sm = StateMachine(0,simpleInverter,freq=40000000,in_base=pin_in, set_base=pin_set,pull_thresh=32)
+
+# sm.active(1)
 
 @micropython.asm_thumb
 def tsethold():
@@ -132,7 +137,10 @@ class PICProgrammer:
                 print("Kick!")
                 # print(sm)
                 # sm.active(1)
-                sm.put(0xAA)
+                sm.active(0)
+                sm.put(65000)  # x_delay
+                sm.put(40000)     # y_pulselen
+                sm.active(1)
                 # sleep_us(50)
             self.PGC.value(0)
             tsethold()
@@ -182,7 +190,6 @@ class PICProgrammer:
         return x >> 1
 
 g = glitcher.Glitcher()
-# g.muxout(glitcher.SELECT_MUXB)
 g.enablemux(True)
 g.setmask(glitcher.SELECT_MUXB)
 g.muxout(glitcher.SELECT_NONE)
@@ -232,7 +239,15 @@ def test2():
     print("Unlock with write 0x3FFF")
     # prg.cfgLock(payload=0x180)
     prg.erase(sm_trigger=True)
-    sleep(0.01)
+    sleep(3.0)
+    # sm.active(0)
+    # GL_OUT.init(GL_OUT.OUT,value=0)
+    # sleep(0.5)
+    # g.muxout(glitcher.SELECT_NONE)sm
+    prg.cfgRead()
+    # for i in range(0,5):
+    #     sleep(0.05)
+    print(hex(prg.readFrom(0x400)))
     prg.exitPrg()
 
 
