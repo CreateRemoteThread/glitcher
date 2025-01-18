@@ -147,7 +147,7 @@ class PICProgrammer:
             self.PGD.value(b)
             tsethold()
             if _ == 5 and sm_trigger is True:
-                print("Kick!")
+                # print("Kick!")
                 # print(sm)
                 # sm.active(1)
                 sm.active(0)
@@ -170,6 +170,23 @@ class PICProgrammer:
         self.command(0x08)
         sleep_ms(5)
         
+    def failureCheck(self,addrStart,addrEnd):
+        self.command(0x16)
+        for i in range(0,addrStart):
+            self.command(0x06)
+            sleep_us(5)
+        x = addrStart
+        while x < addrEnd:
+            self.command(0x04)
+            d = self.read_data()
+            if d != 0 and d != 0x3FFF:
+                print("ADDR 0x%04x DATA 0x%04x" % (x,d))
+                return True
+            x += 1
+            self.command(0x06)
+            sleep_us(5)
+            return False
+    
     def readFrom(self,addr):
         self.command(0x16)
         for i in range(0,addr):
@@ -251,28 +268,39 @@ def fuzztest(fixed_delay = None):
     sleep(0.01)
     prg.cfgUnlock()
     sleep(1.0)
-    r_pulse = random.randint(35,55)
+    if fixed_delay == 67100:
+        r_pulse = 1
+    else:
+        r_pulse = random.randint(35,85)
     # print("R_DELAY = %d, R_PULSE = %d" % (r_delay,r_pulse))
     prg.setParams(delay=r_delay,pulse=r_pulse)
     prg.erase(addr=0x500,sm_trigger=True)
     sleep(1.0)
     data1 = prg.readFrom(0x400)
     data2 = prg.readFrom(0x800)
+    www = prg.failureCheck(0x200,0x1000)
     prg.exitPrg()
-    return (r_delay,r_pulse,data1,data2)
+    return (r_delay,r_pulse,data1,data2,www)
 
 def fuzzloop():
-    for f_delay in range(62000,67000):
+    for f_delay in range(63875-35,63875+25,1):
         x = fuzztest(fixed_delay=f_delay)
         if x is None:
             print("Chip burned")
             return
         else:
-            (r_delay,r_pulse,data1,data2) = x
+            (r_delay,r_pulse,data1,data2,www) = x
             print("Attempt %d, Delay: %d, Pulse: %d, Fetch1: 0x%04x, Fetch2: 0x%04x" % (f_delay,r_delay,r_pulse,data1,data2))
             if (data1 != 0 and data1 != 0x3FFF) or (data2 != 0 and data2 != 0x3FFF):
                 print("Win")
-                return
+                # return
+            elif www:
+                print("win")
+                # return
+            elif data1 != data2:
+                print("Kinda win")
+            if data1 == 0 and data2 == 0:
+                fuzztest(fixed_delay=67100)
 
 def test2():
     prg = PICProgrammer()
@@ -307,14 +335,8 @@ def test2():
     prg.setParams(delay=r_delay,pulse=r_pulse)
     prg.erase(addr=0x500,sm_trigger=True)
     sleep(1.0)
-    # sm.active(0)
-    # GL_OUT.init(GL_OUT.OUT,value=0)
-    # sleep(0.5)
-    # g.muxout(glitcher.SELECT_NONE)sm
-    # prg.cfgRead()
     print(hex(prg.readFrom(0x400)))
     print(hex(prg.readFrom(0x800)))
-    # print(hex(prg.readFrom(0x1400)))
     prg.exitPrg()
 
 
