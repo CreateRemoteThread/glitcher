@@ -176,16 +176,17 @@ class PICProgrammer:
             self.command(0x06)
             sleep_us(5)
         x = addrStart
+        blabla = False
         while x < addrEnd:
             self.command(0x04)
             d = self.read_data()
             if d != 0 and d != 0x3FFF:
                 print("ADDR 0x%04x DATA 0x%04x" % (x,d))
-                return True
+                blabla = True
             x += 1
             self.command(0x06)
             sleep_us(5)
-            return False
+        return blabla
     
     def readFrom(self,addr):
         self.command(0x16)
@@ -276,14 +277,14 @@ def fuzztest(fixed_delay = None):
     prg.setParams(delay=r_delay,pulse=r_pulse)
     prg.erase(addr=0x500,sm_trigger=True)
     sleep(1.0)
+    www = prg.failureCheck(0x200,0x1000)
     data1 = prg.readFrom(0x400)
     data2 = prg.readFrom(0x800)
-    www = prg.failureCheck(0x200,0x1000)
     prg.exitPrg()
     return (r_delay,r_pulse,data1,data2,www)
 
 def fuzzloop():
-    for f_delay in range(63875-35,63875+25,1):
+    for f_delay in range(63000,64000,15):
         x = fuzztest(fixed_delay=f_delay)
         if x is None:
             print("Chip burned")
