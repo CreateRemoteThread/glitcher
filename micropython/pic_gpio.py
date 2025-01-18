@@ -1,6 +1,7 @@
 from machine import Pin
 import glitcher
 from time import sleep, sleep_ms, sleep_us, ticks_ms
+import random
 from rp2 import PIO,StateMachine,asm_pio
 
 # pio method turned out to be a huge fuckaround, so using this instead:
@@ -72,8 +73,16 @@ class PICProgrammer:
         self.PGC.init(self.PGC.IN)
         self.MCLR.value(1)
     
-    def erase(self,sm_trigger=True):
-        self.command(0x16)
+    def erase(self,addr=None,sm_trigger=True):
+        if addr is None:
+            self.command(0x00)
+            self.write_data(0x3FFF)
+        else:
+            self.command(0x16)
+            for i in range(0,addr):
+                self.command(0x06)
+                sleep_us(5)
+            # self.write_data(0x3FFF)
         self.command(0x09,sm_trigger=sm_trigger)
     
     def cfgRead(self):
@@ -123,6 +132,10 @@ class PICProgrammer:
                 tsethold()
         self.xbit()
 
+    def setParams(self,delay=65700,pulse=4000):
+        self.delay = delay
+        self.pulse = pulse
+
     def command(self,x,sm_trigger=False):
         global sm
         x = x & 0x3f
@@ -138,8 +151,8 @@ class PICProgrammer:
                 # print(sm)
                 # sm.active(1)
                 sm.active(0)
-                sm.put(65000)  # x_delay
-                sm.put(40000)     # y_pulselen
+                sm.put(self.delay)  # x_delay
+                sm.put(self.pulse)     # y_pulselen
                 sm.active(1)
                 # sleep_us(50)
             self.PGC.value(0)
@@ -192,7 +205,7 @@ class PICProgrammer:
 g = glitcher.Glitcher()
 g.enablemux(True)
 g.setmask(glitcher.SELECT_MUXB)
-g.muxout(glitcher.SELECT_NONE)
+# g.muxout(glitcher.SELECT_NONE)
 
 def test():
     addr = 0x120
@@ -211,13 +224,57 @@ def test():
     print(hex(prg.readFrom(0x400)))
     prg.exitPrg()
 
+def fuzztest(fixed_delay = None):
+    prg = PICProgrammer()
+    prg.enterPrg()
+    prg.sendKey()
+    prg.command(0x00)
+    prg.write_data(0x3FFF)
+    for i in range(0,6):
+        prg.command(0x06)
+    prg.command(0x04)
+    cid = prg.read_data()
+    if cid != 0x302b:
+        print("Target burnt, chipid failed")
+        return None
+    prg.writeTo(0x0400,0x4444)   # Prep target data
+    prg.writeTo(0x0800,0x4444)
+    data = prg.readFrom(0x400)
+    if data != 0x444:
+        r_delay = 67100
+    else:
+        if fixed_delay is None:
+            r_delay = random.randint(66000,67100)
+        else:
+            r_delay = fixed_delay
+    prg.cfgLock()
+    sleep(0.01)
+    prg.cfgUnlock()
+    sleep(1.0)
+    r_pulse = random.randint(35,55)
+    # print("R_DELAY = %d, R_PULSE = %d" % (r_delay,r_pulse))
+    prg.setParams(delay=r_delay,pulse=r_pulse)
+    prg.erase(addr=0x500,sm_trigger=True)
+    sleep(1.0)
+    data1 = prg.readFrom(0x400)
+    data2 = prg.readFrom(0x800)
+    prg.exitPrg()
+    return (r_delay,r_pulse,data1,data2)
+
+def fuzzloop():
+    for f_delay in range(62000,67000):
+        x = fuzztest(fixed_delay=f_delay)
+        if x is None:
+            print("Chip burned")
+            return
+        else:
+            (r_delay,r_pulse,data1,data2) = x
+            print("Attempt %d, Delay: %d, Pulse: %d, Fetch1: 0x%04x, Fetch2: 0x%04x" % (f_delay,r_delay,r_pulse,data1,data2))
+            if (data1 != 0 and data1 != 0x3FFF) or (data2 != 0 and data2 != 0x3FFF):
+                print("Win")
+                return
+
 def test2():
-    # global sm
-    # print("sm is live")
-    # sm = StateMachine(0,simpleInverter,freq=10000000,set_base=Pin(INVERTER_OUT,Pin.OUT),pull_thresh=8)
-    # sm.active(1)
-    trig_pin = Pin(10,Pin.OUT,value=0)
-    addr = 0x120
     prg = PICProgrammer()
     prg.enterPrg()
     prg.sendKey()
@@ -229,6 +286,8 @@ def test2():
     print("ChipID")
     print(hex(prg.read_data()))
     prg.writeTo(0x0400,0x4444)
+    prg.writeTo(0x0800,0x4444)
+    # prg.writeTo(0x1400,0x4444)
     print(hex(prg.readFrom(0x400)))
     print("Locking...")
     prg.cfgLock()
@@ -237,17 +296,25 @@ def test2():
     print(hex(prg.readFrom(0x400)))
     # g.muxout(glitcher.SELECT_MUXB)
     print("Unlock with write 0x3FFF")
-    # prg.cfgLock(payload=0x180)
-    prg.erase(sm_trigger=True)
-    sleep(3.0)
+    prg.cfgUnlock()
+    sleep(1.0)
+    # 15000 for read / prep stage?
+    # 62000 for flash access
+    # random.randint(60900,61100) for flash init.
+    r_delay = random.randint(66000,67100)
+    r_pulse = random.randint(35,55)
+    print("R_DELAY = %d, R_PULSE = %d" % (r_delay,r_pulse))
+    prg.setParams(delay=r_delay,pulse=r_pulse)
+    prg.erase(addr=0x500,sm_trigger=True)
+    sleep(1.0)
     # sm.active(0)
     # GL_OUT.init(GL_OUT.OUT,value=0)
     # sleep(0.5)
     # g.muxout(glitcher.SELECT_NONE)sm
-    prg.cfgRead()
-    # for i in range(0,5):
-    #     sleep(0.05)
+    # prg.cfgRead()
     print(hex(prg.readFrom(0x400)))
+    print(hex(prg.readFrom(0x800)))
+    # print(hex(prg.readFrom(0x1400)))
     prg.exitPrg()
 
 
