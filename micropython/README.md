@@ -1,5 +1,7 @@
 # Notes
 
+Glitcher is primarily used via the MicroPython interface on the Raspberry Pi Pico. This allows for a number of things to be initialized without 
+
 ## AVR Glitcher
 
 ```import glitcher
